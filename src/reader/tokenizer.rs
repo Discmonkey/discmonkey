@@ -49,3 +49,24 @@ impl Tokenizer {
     }
 
 }
+
+#[cfg(test)]
+mod test {
+
+    use super::Tokenizer;
+
+    #[test]
+    fn tokenize() {
+
+        let r = Tokenizer::new();
+        let line = "(+ 4 4)".to_string();
+
+        let result = r.tokenize(line);
+
+
+        assert_eq!(result.0.unwrap(), vec!{"(".to_string(), "+".to_string(), "4".to_string(),
+                                           "4".to_string(), ")".to_string()})
+
+
+    }
+}
