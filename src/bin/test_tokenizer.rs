@@ -24,21 +24,21 @@ fn main() {
         }
 
 
-        let (option_vec, size) = lexer.tokenize(user_input);
+        let (tokens, err) = lexer.tokenize(user_input);
 
-
-        match option_vec {
-            None => cmd.write_line(&format!("error at position {}", size).to_string()),
-
-            Some(matches) => {
-                for token in matches {
-                    cmd.write(&token.as_str().to_string());
-                }
-
-                cmd.write(&("\n".to_string()));
+        match err {
+            Some(error) => {
+                error.print();
+                continue;
             }
+            _ => ()
         }
 
+        for token in tokens {
+            cmd.write(&token.as_str().to_string());
+        }
+
+        cmd.write(&("\n".to_string()));
 
     }
 
