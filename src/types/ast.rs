@@ -1,6 +1,7 @@
 use super::reader::parser::Parser;
 use super::atom::Atom;
 use super::list::List;
+
 pub enum LispType {
     List,
     Atom,
@@ -64,6 +65,13 @@ impl AST {
         parser.next().map(| val | {
             Box::new(Atom::new(val.clone())) as Box<dyn LispValue>
         })
+    }
+
+    pub fn print(&self) {
+        match &self.root {
+            None => println!("empty tree"),
+            Some(val) => val.print()
+        };
     }
 
 }

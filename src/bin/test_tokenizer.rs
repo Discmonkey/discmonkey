@@ -1,6 +1,7 @@
 use lispinrust::io::UserIO;
 use lispinrust::reader::tokenizer::Tokenizer;
-
+use lispinrust::types::ast::AST;
+use lispinrust::reader::parser::Parser;
 fn main() {
 
     let cmd = UserIO::new();
@@ -34,11 +35,15 @@ fn main() {
             _ => ()
         }
 
-        for token in tokens {
-            cmd.write(&token.as_str().to_string());
-        }
+        let mut parser = Parser::new(tokens);
+        let mut ast = AST::new();
+        ast.build(&mut parser);
 
-        cmd.write(&("\n".to_string()));
+        ast.print();
+
+        println!();
+
+
 
     }
 

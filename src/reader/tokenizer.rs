@@ -3,7 +3,7 @@ use super::error::{Error, ErrorType}; // instead of super::super we use this her
 use std::fmt;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     SpecialTwo,
     SpecialOne,
@@ -12,7 +12,7 @@ pub enum TokenType {
     Symbol
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     text: String,
     token_type: TokenType
@@ -33,11 +33,6 @@ impl Token {
         &self.text
     }
 
-    pub fn print(&self) {
-
-
-        println!("{}", self.text);
-    }
 }
 
 impl fmt::Display for Token {
@@ -69,7 +64,6 @@ pub type ErrorIndex = usize;
 impl Tokenizer {
 
     pub fn new() -> Self {
-//        let re = Regex::new(r#"[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)"#);
 
         let re = Regex::new(r#"(?x)
             [\s,]* #skip white spaces

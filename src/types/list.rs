@@ -15,10 +15,11 @@ impl List {
 
 impl LispValue for List {
     fn print(&self) {
-        print!("( ");
+        print!("sexpr ( ");
 
         for child in &self.children {
             child.print();
+            print!(" ");
         }
 
         print!(" )");
