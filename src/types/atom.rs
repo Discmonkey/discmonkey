@@ -1,13 +1,19 @@
-use super::LispValue;
-use super::LispType;
+use super::ast::{LispValue, LispType};
+use super::super::reader::tokenizer::Token;
 
-struct Atom {
-    val: String
+pub struct Atom {
+    token: Token
+}
+
+impl Atom {
+    pub fn new(token: Token) -> Atom {
+        Atom{token}
+    }
 }
 
 impl LispValue for Atom {
     fn print(&self) {
-        print!("{}", self.val);
+        print!("{}", self.token);
     }
 
     fn type_(&self) -> LispType {
@@ -18,7 +24,7 @@ impl LispValue for Atom {
         unimplemented!()
     }
 
-    fn add_child(&mut self, new_node: Box<dyn LispValue>) {
+    fn add_child(&mut self, _new_node: Box<dyn LispValue>) {
         unimplemented!()
     }
 }

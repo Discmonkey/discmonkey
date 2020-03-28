@@ -1,8 +1,16 @@
-use super::LispValue;
-use super::LispType;
+use super::ast::{LispValue, LispType};
 
-struct List {
+pub struct List {
     children: Vec<Box<dyn LispValue>>
+}
+
+impl List {
+
+    pub fn new() -> Self {
+        List {
+            children: Vec::new()
+        }
+    }
 }
 
 impl LispValue for List {

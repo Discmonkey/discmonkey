@@ -1,78 +1,142 @@
 use regex::Regex;
 use super::error::{Error, ErrorType}; // instead of super::super we use this here
+use std::fmt;
+
+
+#[derive(Debug)]
+pub enum TokenType {
+    SpecialTwo,
+    SpecialOne,
+    String,
+    Comment,
+    Symbol
+}
+
+#[derive(Debug)]
+pub struct Token {
+    text: String,
+    token_type: TokenType
+}
+
+impl Token {
+    pub fn new(text: String, token_type: TokenType) -> Self {
+        Self {
+            text, token_type
+        }
+    }
+
+    pub fn get_type(&self) -> &TokenType {
+        &self.token_type
+    }
+
+    pub fn get_text(&self) -> &String {
+        &self.text
+    }
+
+    pub fn print(&self) {
+
+
+        println!("{}", self.text);
+    }
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        
+        let pre;
+        match self.token_type {
+            TokenType::String => pre = "string",
+            TokenType::SpecialOne => pre = "special",
+            TokenType::SpecialTwo => pre = "special_two",
+            TokenType::Comment => pre = "comment",
+            TokenType::Symbol => pre = "symbol"
+        };
+
+        write!(f, "{}: {}", pre, self.text)
+
+    }
+}
+
+pub type Tokens = Vec<Token>;
 
 pub struct Tokenizer {
     re: Regex,
 }
 
 pub type ErrorIndex = usize;
-pub type Tokens = Vec<String>;
+
 
 impl Tokenizer {
 
     pub fn new() -> Self {
-        let re = Regex::new(r#"[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)"#);
+//        let re = Regex::new(r#"[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)"#);
+
+        let re = Regex::new(r#"(?x)
+            [\s,]* #skip white spaces
+            (?P<special_two>~@)
+            |
+            (?P<special_one>[\[\]{}()'`~^@])
+            |
+            (?P<string>"(?:\\.|[^\\"])*"?)
+            |
+            (?P<comment>;.*)
+            |
+            (?P<symbol>[^\s\[\]{}('"`,;)]*)"#);
 
         Self{re: re.unwrap()}
     }
 
-    pub fn tokenize(&self, mut line: String) -> (Vec<String>, Option<Error>) {
+    pub fn tokenize(&self, line:  String) -> (Tokens, Option<Error>) {
 
         let mut v = Vec::new();
-        let mut current_token: usize = 0;
 
-        let line_number= 0;
         let mut parentheses_count = 0; // needs to end at zero, otherwise syntax error
+        let mut err = None;
 
 
-        loop {
-            match self.re.captures(&line) {
+        for cap in self.re.captures_iter(&line) {
 
-                None => {
-                    let err = Error::new(ErrorType::Syntax,
-                                         line_number,
-                                         current_token,
-                                         "could not parse token");
+            if let Some(m) = cap.name("symbol") {
+                v.push(Token::new(m.as_str().to_string(), TokenType::Symbol));
 
-                    return (v, Some(err))
+            } else if let Some(m) = cap.name("string") {
+                let last_char = m.as_str().chars().last().unwrap();
+
+                if last_char != '"' {
+                    err = Some(Error::new(ErrorType::Syntax, "unclosed string"));
+                    break;
                 }
 
-                Some(captures) => {
+                v.push(Token::new(m.as_str().to_string(), TokenType::String));
 
-                    if captures.len() <= 1 {
-                        break;
-                    } else {
-                        // first capture group is the full match
-                        let m = captures.get(0).unwrap();
-                        current_token += m.end() - m.start();
-                    }
+            } else if let Some(m) = cap.name("special_one") {
+                let s = m.as_str();
 
-                    let m = captures.get(1).unwrap();
-
-                    if m.start() == m.end() {
-                        break;
-                    }
-
-                    let token = m.as_str();
-
-                    match token {
-                        "(" => parentheses_count += 1,
-                        ")" => parentheses_count -= 1,
-                        _ => ()
-                    }
-
-                    v.push(token.to_string());
-                    line = line[m.end()..].to_string();
+                if s == "(" {
+                    parentheses_count += 1;
+                } else if s == ")" {
+                    parentheses_count -= 1;
                 }
+
+                v.push(Token::new(s.to_string(),
+                                  TokenType::SpecialOne));
+
+            } else if let Some(m) = cap.name("special_two") {
+                v.push(Token::new(m.as_str().to_string(),
+                                  TokenType::SpecialTwo));
+
+            } else if let Some(m) = cap.name("comment") {
+                v.push(Token::new(m.as_str().to_string(),
+                                  TokenType::Comment));
             }
         }
 
-        if parentheses_count == 0 {
-            (v, None)
-        } else {
-            (v, Some(Error::new(ErrorType::Semantic, 0, 0,
-                                 "opening/closing parentheses mismatch")))
+        if err.is_none() && parentheses_count != 0 {
+            err = Some(Error::new(ErrorType::Syntax, "mismatched parentheses"));
         }
+
+        (v, err)
+
     }
 
 }
@@ -95,8 +159,8 @@ mod test {
             _ => assert!(false)
         }
 
-        assert_eq!(result, vec!{"(".to_string(), "+".to_string(), "4".to_string(),
-                                           "4".to_string(), ")".to_string()})
+        assert_eq!(result[0].get_text(), "(");
+        assert_eq!(result[4].get_text(), ")");
 
 
     }
