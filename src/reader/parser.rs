@@ -1,5 +1,6 @@
 use super::tokenizer::Tokens;
 use super::tokenizer::Token;
+
 pub struct Parser {
     tokens: Tokens,
     index: usize
