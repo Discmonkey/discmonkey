@@ -1,13 +1,13 @@
-
 use lispinrust::io::UserIO;
+use lispinrust::reader::tokenizer::Tokenizer;
+use lispinrust::types::ast::AST;
+use lispinrust::reader::parser::Parser;
+
 
 fn main() {
 
-    let mut cmd = UserIO::new();
-
-    cmd.set_prefix("hi max> ".to_string());
-
-
+    let cmd = UserIO::new();
+    let tokenizer = Tokenizer::new();
 
     let mut maybe_line;
 
@@ -16,17 +16,36 @@ fn main() {
 
         maybe_line = cmd.read_line();
 
-        match maybe_line {
-            // got an EOF
-            None => break,
+        if maybe_line.is_none() {
+            break; // exit successfully
+        }
 
-            // anything else, note that newline is length 0
-            Some(user_input) => {
-                if user_input.len() > 0 {
-                    cmd.write_line(&user_input);
-                }
+        let user_input = maybe_line.unwrap();
+
+        if user_input.len() == 0 {
+            continue;
+        }
+
+
+        let (tokens, err) = tokenizer.tokenize(user_input);
+
+        match err {
+            Some(error) => {
+                println!("{}", error);
+                continue;
             }
-        };
+            _ => ()
+        }
+
+        let mut parser = Parser::new(tokens);
+        let mut ast = AST::new();
+
+        ast.build(&mut parser);
+        ast.print();
+
+        println!();
+
+
 
     }
 

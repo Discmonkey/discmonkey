@@ -1,3 +1,5 @@
+use std::fmt::{Display, Result, Formatter};
+
 #[derive(Debug)]
 pub enum ErrorType {
     Semantic,
@@ -31,11 +33,10 @@ impl Error {
         self.line_number = at;
     }
 
-    pub fn print(&self) {
-        println!("{:?} error {}: {} - {}", &self.type_,
-            &self.line_number, &self.character_number, &self.message
-        );
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{:?} error - {}", self.type_, self.message)
     }
-
-
 }

@@ -47,7 +47,12 @@ impl AST {
                 let mut parent_node = Box::new(List::new());
 
                 while let Some(val) = self.read_form(parser) {
-                    parent_node.add_child(val)
+                    parent_node.add_child(val);
+
+                    if parser.peek().unwrap().get_text().as_str() == ")" {
+                        parser.next();
+                        break;
+                    }
                 }
 
                 Some(parent_node as Box<dyn LispValue>)

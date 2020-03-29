@@ -19,7 +19,7 @@ impl LispValue for List {
 
         for child in &self.children {
             child.print();
-            print!(" ");
+            print!(", ");
         }
 
         print!(" )");
