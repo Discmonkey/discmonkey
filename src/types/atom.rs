@@ -24,7 +24,7 @@ impl LispValue for Atom {
         unimplemented!()
     }
 
-    fn add_child(&mut self, _new_node: Box<dyn LispValue>) {
-        unimplemented!()
+    fn symbol(&mut self) -> &Token {
+        &self.token
     }
 }

@@ -1,6 +1,7 @@
 use regex::Regex;
 use super::error::{Error, ErrorType}; // instead of super::super we use this here
 use std::fmt;
+use std::collections::VecDeque;
 
 
 #[derive(Debug, Clone)]
@@ -52,7 +53,7 @@ impl fmt::Display for Token {
     }
 }
 
-pub type Tokens = Vec<Token>;
+pub type Tokens = VecDeque<Token>;
 
 pub struct Tokenizer {
     re: Regex,
@@ -82,7 +83,7 @@ impl Tokenizer {
 
     pub fn tokenize(&self, line:  String) -> (Tokens, Option<Error>) {
 
-        let mut v = Vec::new();
+        let mut v = VecDeque::new();
 
         let mut parentheses_count = 0; // needs to end at zero, otherwise syntax error
         let mut err = None;
@@ -91,7 +92,7 @@ impl Tokenizer {
         for cap in self.re.captures_iter(&line) {
 
             if let Some(m) = cap.name("symbol") {
-                v.push(Token::new(m.as_str().to_string(), TokenType::Symbol));
+                v.push_back(Token::new(m.as_str().to_string(), TokenType::Symbol));
 
             } else if let Some(m) = cap.name("string") {
                 let last_char = m.as_str().chars().last().unwrap();
@@ -101,7 +102,7 @@ impl Tokenizer {
                     break;
                 }
 
-                v.push(Token::new(m.as_str().to_string(), TokenType::String));
+                v.push_back(Token::new(m.as_str().to_string(), TokenType::String));
 
             } else if let Some(m) = cap.name("special_one") {
                 let s = m.as_str();
@@ -112,15 +113,15 @@ impl Tokenizer {
                     parentheses_count -= 1;
                 }
 
-                v.push(Token::new(s.to_string(),
+                v.push_back(Token::new(s.to_string(),
                                   TokenType::SpecialOne));
 
             } else if let Some(m) = cap.name("special_two") {
-                v.push(Token::new(m.as_str().to_string(),
+                v.push_back(Token::new(m.as_str().to_string(),
                                   TokenType::SpecialTwo));
 
             } else if let Some(m) = cap.name("comment") {
-                v.push(Token::new(m.as_str().to_string(),
+                v.push_back(Token::new(m.as_str().to_string(),
                                   TokenType::Comment));
             }
         }

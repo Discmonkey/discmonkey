@@ -1,7 +1,7 @@
 use super::reader::parser::Parser;
 use super::atom::Atom;
 use super::list::List;
-
+use crate::reader::tokenizer::Token;
 pub enum LispType {
     List,
     Atom,
@@ -11,7 +11,7 @@ pub trait LispValue {
     fn print(&self);
     fn type_(&self) -> LispType;
     fn children(&self) -> &Vec<Box<dyn LispValue>>;
-    fn add_child(&mut self, new_node: Box<dyn LispValue>);
+    fn symbol(&mut self) -> &Token;
 }
 
 pub type Link = Option<Box<dyn LispValue>>;
@@ -42,9 +42,20 @@ impl AST {
 
         match maybe_next_character.unwrap().get_text().as_str() {
             "(" => {
-                parser.next(); // consume token
+                parser.next(); // consume token for "("
 
-                let mut parent_node = Box::new(List::new());
+                let first_item_maybe = parser.next();
+
+                // is this the correct behavior?
+                // what is an () in Lisp?
+                if first_item_maybe.is_none() {
+                    return None
+                }
+
+                // the first item in a list defines its behavior.
+                let first_item = first_item_maybe.unwrap();
+
+                let mut parent_node = Box::new(List::new(first_item));
 
                 while let Some(val) = self.read_form(parser) {
                     parent_node.add_child(val);
