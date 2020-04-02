@@ -1,28 +1,49 @@
 use std::collections::HashMap;
-use crate::reader::tokenizer::Token;
-use crate::types::ast::LispValue;
+use crate::env::eval::LispResult;
 
 
-type Operator = fn(Vec<Box<dyn LispValue>>) -> Box<dyn LispValue>;
+type Operator = fn(LispResult, LispResult) -> LispResult;
 
 pub struct MathEnv {
     map: HashMap<String, Operator>
 }
 
-fn add(args: Vec<Box<dyn LispValue>>) -> Box<dyn LispValue> {
-    unimplemented!()
+macro_rules! operate {
+    ($op:tt, $a:expr, $b:expr) => {
+        match $a {
+            LispResult::Error => LispResult::Error,
+
+            LispResult::Int(i) => match $b {
+                LispResult::Error => LispResult::Error,
+                LispResult::Int(i2) => LispResult::Int(i $op i2),
+                LispResult::Float(f) => LispResult::Float(i as f32 $op f)
+            }
+
+            LispResult::Float(f) => match $b {
+                LispResult::Error => LispResult::Error,
+                LispResult::Int(i2) => LispResult::Float(f $op i2 as f32),
+                LispResult::Float(f2) => LispResult::Float(f $op f2)
+            }
+
+        }
+    };
 }
 
-fn sub(args: Vec<Box<dyn LispValue>>) -> Box<dyn LispValue> {
-    unimplemented!()
+
+fn add(a: LispResult, b: LispResult) -> LispResult {
+    operate!(+, a, b)
 }
 
-fn mul(args: Vec<Box<dyn LispValue>>) -> Box<dyn LispValue> {
-    unimplemented!()
+fn sub(a: LispResult, b: LispResult) -> LispResult {
+    operate!(-, a, b)
 }
 
-fn div(args: Vec<Box<dyn LispValue>>) -> Box<dyn LispValue> {
-    unimplemented!()
+fn mul(a: LispResult, b: LispResult) -> LispResult {
+    operate!(*, a, b)
+}
+
+fn div(a: LispResult, b: LispResult) -> LispResult {
+    operate!(/, a, b)
 }
 
 
@@ -30,6 +51,7 @@ impl MathEnv {
 
     pub fn new() -> Self {
         let mut map: HashMap<String, Operator> = HashMap::new();
+
         map.insert("+".to_string(), add);
         map.insert("-".to_string(), sub);
         map.insert("*".to_string(), mul);
@@ -40,7 +62,7 @@ impl MathEnv {
         }
     }
 
-    pub fn apply(val: Box<dyn LispValue>) {
-
+    pub fn get_func(&self, key: &String) -> (Option<&Operator>) {
+        self.map.get(key)
     }
 }

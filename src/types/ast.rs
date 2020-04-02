@@ -2,6 +2,7 @@ use super::reader::parser::Parser;
 use super::atom::Atom;
 use super::list::List;
 use crate::reader::tokenizer::Token;
+
 pub enum LispType {
     List,
     Atom,
@@ -11,7 +12,7 @@ pub trait LispValue {
     fn print(&self);
     fn type_(&self) -> LispType;
     fn children(&self) -> &Vec<Box<dyn LispValue>>;
-    fn symbol(&mut self) -> &Token;
+    fn symbol(&self) -> &Token;
 }
 
 pub type Link = Option<Box<dyn LispValue>>;
@@ -31,7 +32,7 @@ impl AST {
     pub fn build(&mut self, parser: &mut Parser){
         self.root = self.read_form(parser);
     }
-//
+
     fn read_form(&self,  parser: &mut Parser) -> Option<Box<dyn LispValue>> {
 
         let maybe_next_character = parser.peek();
@@ -83,11 +84,17 @@ impl AST {
         })
     }
 
+    pub fn root(&self) -> &Link {
+        &self.root
+    }
+
     pub fn print(&self) {
         match &self.root {
             None => println!("empty tree"),
             Some(val) => val.print()
         };
     }
+
+
 
 }

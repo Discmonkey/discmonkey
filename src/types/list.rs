@@ -43,7 +43,7 @@ impl LispValue for List {
         &(self.children)
     }
 
-    fn symbol(&mut self) -> &Token {
-        unimplemented!()
+    fn symbol(&self) -> &Token {
+        &self.symbol
     }
 }

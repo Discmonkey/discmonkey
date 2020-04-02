@@ -1,5 +1,5 @@
 use super::ast::{LispValue, LispType};
-use super::super::reader::tokenizer::Token;
+use crate::reader::tokenizer::Token;
 
 pub struct Atom {
     token: Token
@@ -24,7 +24,7 @@ impl LispValue for Atom {
         unimplemented!()
     }
 
-    fn symbol(&mut self) -> &Token {
+    fn symbol(&self) -> &Token {
         &self.token
     }
 }

@@ -29,7 +29,7 @@ fn main() {
 
         match err {
             Some(error) => {
-                error.print();
+                println!("{}", error);
                 continue;
             }
             _ => ()
