@@ -25,7 +25,7 @@ impl fmt::Display for LispResult {
 pub fn eval_ast(root: &Box<dyn LispValue>, mut env: &mut Env) -> LispResult {
     match root.type_() {
         LispType::List => eval_list(root, &mut env),
-        LispType::Atom => eval_symbol(root)
+        LispType::Atom => eval_symbol(root, env)
     }
 }
 
@@ -78,9 +78,12 @@ pub fn eval_list(list: &Box<dyn LispValue>, env: &mut Env) -> LispResult {
 
 }
 
-pub fn eval_symbol(atom: &Box<dyn LispValue>) -> LispResult {
+pub fn eval_symbol(atom: &Box<dyn LispValue>, env: &Env) -> LispResult {
     let string = atom.symbol().get_text();
 
+    if let Some(LispEntry::Value(res)) = env.get(string) {
+        return res.clone()
+    }
     // will need to improve this method of resolving as we get more types.
     match string.parse::<i32>() {
         Ok(i) => LispResult::Int(i),
