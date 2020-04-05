@@ -3,7 +3,7 @@ use lispinrust::reader::tokenizer::{Tokenizer, Tokens};
 use lispinrust::types::ast::AST;
 use lispinrust::reader::parser::Parser;
 use lispinrust::env::eval::eval_ast;
-use lispinrust::env::math::Env;
+use lispinrust::env::state::Env;
 
 fn make_ast(tokens: Tokens) -> AST {
     let mut parser = Parser::new(tokens);

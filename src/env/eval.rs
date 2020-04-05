@@ -1,5 +1,5 @@
 use crate::types::ast::{LispValue, LispType};
-use crate::env::math::{Env, LispEntry};
+use crate::env::state::{Env, LispEntry};
 use std::fmt;
 use std::collections::VecDeque;
 
@@ -102,6 +102,7 @@ mod test {
     use crate::reader::tokenizer::{Token, TokenType};
     use crate::types::atom::Atom;
     use crate::types::ast::LispValue;
+    use crate::env::state;
 
     #[test]
     fn symbol() {
