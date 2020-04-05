@@ -47,7 +47,7 @@ pub fn eval_list(list: &Box<dyn LispValue>, env: &MathEnv) -> LispResult {
             // then lets apply our list func to them
             if let Some(accumulator) = results.pop_front() {
                 results.into_iter().fold(
-                    accumulator,  | sum, next | func(sum, next)
+                    accumulator,  | total, next | func(total, next)
                 )
             } else {
                 LispResult::Error

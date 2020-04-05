@@ -16,7 +16,7 @@ macro_rules! operate {
             LispResult::Int(i) => match $b {
                 LispResult::Error => LispResult::Error,
                 LispResult::Int(i2) => LispResult::Int(i $op i2),
-                LispResult::Float(f) => LispResult::Float(i as f32 $op f)
+                LispResult::Float(f2) => LispResult::Float(i as f32 $op f2)
             }
 
             LispResult::Float(f) => match $b {

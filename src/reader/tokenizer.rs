@@ -81,12 +81,11 @@ impl Tokenizer {
         Self{re: re.unwrap()}
     }
 
-    pub fn tokenize(&self, line:  String) -> (Tokens, Option<Error>) {
+    pub fn tokenize(&self, line:  String) -> Result<Tokens, Error> {
 
         let mut v = VecDeque::new();
 
         let mut parentheses_count = 0; // needs to end at zero, otherwise syntax error
-        let mut err = None;
 
 
         for cap in self.re.captures_iter(&line) {
@@ -98,8 +97,7 @@ impl Tokenizer {
                 let last_char = m.as_str().chars().last().unwrap();
 
                 if last_char != '"' {
-                    err = Some(Error::new(ErrorType::Syntax, "unclosed string"));
-                    break;
+                    return Err(Error::new(ErrorType::Syntax, "unclosed string"));
                 }
 
                 v.push_back(Token::new(m.as_str().to_string(), TokenType::String));
@@ -126,11 +124,11 @@ impl Tokenizer {
             }
         }
 
-        if err.is_none() && parentheses_count != 0 {
-            err = Some(Error::new(ErrorType::Syntax, "mismatched parentheses"));
+        match parentheses_count {
+            x if x < 0 => Err(Error::new(ErrorType::Syntax, "too few opening parentheses")),
+            x if x > 0 => Err(Error::new(ErrorType::Syntax, "too few closing parentheses")),
+            _ => Ok(v)
         }
-
-        (v, err)
 
     }
 
