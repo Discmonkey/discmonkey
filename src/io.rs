@@ -25,6 +25,7 @@ impl UserIO {
             return None
         }
 
+        // getting rid of newline
         input.pop();
 
         Some(input)

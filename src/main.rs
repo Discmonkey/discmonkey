@@ -3,7 +3,7 @@ use lispinrust::reader::tokenizer::{Tokenizer, Tokens};
 use lispinrust::types::ast::AST;
 use lispinrust::reader::parser::Parser;
 use lispinrust::env::eval::eval_ast;
-use lispinrust::env::math::MathEnv;
+use lispinrust::env::math::Env;
 
 fn make_ast(tokens: Tokens) -> AST {
     let mut parser = Parser::new(tokens);
@@ -19,7 +19,7 @@ fn main() {
     let cmd = UserIO::new();
     let tokenizer = Tokenizer::new();
     let mut maybe_line;
-    let env = MathEnv::new();
+    let mut env = Env::new();
 
     loop {
         cmd.greet();
@@ -48,7 +48,7 @@ fn main() {
             Ok(tokens) => {
 
                 if let Some(root) = make_ast(tokens).root() {
-                    println!("{}", eval_ast(root, &env))
+                    println!("{}", eval_ast(root, &mut env))
                 }
 
             }

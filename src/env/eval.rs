@@ -1,8 +1,9 @@
 use crate::types::ast::{LispValue, LispType};
-use crate::env::math::MathEnv;
+use crate::env::math::{Env, LispEntry};
 use std::fmt;
 use std::collections::VecDeque;
 
+#[derive(Clone)]
 pub enum LispResult {
     Int(i32),
     Float(f32),
@@ -21,39 +22,60 @@ impl fmt::Display for LispResult {
     }
 }
 
-pub fn eval_ast(root: &Box<dyn LispValue>, env: &MathEnv) -> LispResult {
+pub fn eval_ast(root: &Box<dyn LispValue>, mut env: &mut Env) -> LispResult {
     match root.type_() {
-        LispType::List => eval_list(root, &env),
+        LispType::List => eval_list(root, &mut env),
         LispType::Atom => eval_symbol(root)
     }
 }
 
-pub fn eval_list(list: &Box<dyn LispValue>, env: &MathEnv) -> LispResult {
-    let op = list.symbol().get_text(); // *, +, /, etc
+fn apply_set(list: &Box<dyn LispValue>,  env: &mut Env) -> LispResult {
+    let children = list.children();
 
-    let f = env.get_func(op);
+    match children.len() {
+        2 => {
+            let key = children[0].symbol().get_text();
+            let value = eval_ast(&children[1], env);
+
+            env.set(key.clone(), LispEntry::Value(value.clone()));
+
+            value
+        }
+        _ => LispResult::Error
+    }
+}
+
+fn apply_op(op: &String, list: &Box<dyn LispValue>, env: &mut Env) -> LispResult {
+
+    // we can potentially mutate the environment -- which is weird
+    let results : VecDeque<LispResult> = list
+        .children()
+        .iter()
+        .map( |x| eval_ast(x, env))
+        .collect();
+
+    let f = env.get(op);
 
     match f {
         None => LispResult::Error,
-        Some(func) => {
 
-            // lets convert everything to results
-            let mut results : VecDeque<LispResult> = list
-                .children()
-                .iter()
-                .map(|x| eval_ast(x, env))
-                .collect();
-
-            // then lets apply our list func to them
-            if let Some(accumulator) = results.pop_front() {
-                results.into_iter().fold(
-                    accumulator,  | total, next | func(total, next)
-                )
-            } else {
-                LispResult::Error
+        Some(maybe_func) => {
+            match maybe_func {
+                LispEntry::Func(func) => func(results),
+                _ => LispResult::Error
             }
         }
     }
+}
+
+pub fn eval_list(list: &Box<dyn LispValue>, env: &mut Env) -> LispResult {
+    let op = list.symbol().get_text(); // *, +, /, etc
+
+    match op.as_str() {
+        "def!" => apply_set(list, env),
+        _ => apply_op(op, list, env)
+    }
+
 }
 
 pub fn eval_symbol(atom: &Box<dyn LispValue>) -> LispResult {
