@@ -1,9 +1,9 @@
-use super::ast::{LispValue, LispType};
+use super::ast::{LispValue};
 use crate::reader::tokenizer::Token;
 
 
 pub struct List {
-    children: Vec<Box<dyn LispValue>>,
+    children: Vec<Box<LispValue>>,
     symbol: Token,
 }
 
@@ -16,34 +16,34 @@ impl List {
         }
     }
 
-    pub fn add_child(&mut self, value: Box<dyn LispValue>) {
+    pub fn add_child(&mut self, value: Box<LispValue>) {
         self.children.push(value);
     }
-}
 
-impl LispValue for List {
-    fn print(&self) {
+    pub fn print(&self) {
         print!("sexpr ");
         print!("{}", self.symbol.get_text());
         print!(" (");
 
         for child in &self.children {
-            child.print();
-            print!(", ");
+            match child.as_ref() {
+                LispValue::Atom(a) => a.print(),
+                LispValue::List(l) => l.print()
+            };
         }
 
         print!(" )");
     }
 
-    fn type_(&self) -> LispType {
-        LispType::List
-    }
-
-    fn children(&self) -> &Vec<Box<dyn LispValue>> {
+    pub fn children(&self) -> &Vec<Box<LispValue>> {
         &(self.children)
     }
 
-    fn symbol(&self) -> &Token {
+    pub fn symbol(&self) -> &Token {
         &self.symbol
     }
+}
+
+impl List {
+
 }

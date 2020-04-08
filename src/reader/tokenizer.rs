@@ -145,15 +145,15 @@ mod test {
         let r = Tokenizer::new();
         let line = "(+ 4 4)".to_string();
 
-        let (result, err) = r.tokenize(line);
-
-        match err {
-            None => assert!(true),
-            _ => assert!(false)
+        match r.tokenize(line) {
+            Err(m) => assert!(false),
+            Ok(result) => {
+                assert_eq!(result[0].get_text(), "(");
+                assert_eq!(result[4].get_text(), ")");
+            }
         }
 
-        assert_eq!(result[0].get_text(), "(");
-        assert_eq!(result[4].get_text(), ")");
+
 
 
     }
@@ -163,11 +163,9 @@ mod test {
         let r = Tokenizer::new();
         let line = "(+ 4 4 (+ 4)".to_string();
 
-        let (_, err) = r.tokenize(line);
-
-        match err {
-            None => assert!(false),
-            _ => assert!(true)
+        match r.tokenize(line) {
+            Err(m) => assert!(true),
+            Ok(result) => assert!(false)
         }
     }
 }

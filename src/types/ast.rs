@@ -3,19 +3,13 @@ use super::atom::Atom;
 use super::list::List;
 use crate::reader::tokenizer::Token;
 
-pub enum LispType {
-    List,
-    Atom,
+
+pub enum LispValue {
+    List(List),
+    Atom(Atom)
 }
 
-pub trait LispValue {
-    fn print(&self);
-    fn type_(&self) -> LispType;
-    fn children(&self) -> &Vec<Box<dyn LispValue>>;
-    fn symbol(&self) -> &Token;
-}
-
-pub type Link = Option<Box<dyn LispValue>>;
+pub type Link = Option<Box<LispValue>>;
 
 pub struct AST {
     root: Link,
@@ -33,7 +27,7 @@ impl AST {
         self.root = self.read_form(parser);
     }
 
-    fn read_form(&self,  parser: &mut Parser) -> Option<Box<dyn LispValue>> {
+    fn read_form(&self,  parser: &mut Parser) -> Option<Box<LispValue>> {
 
         let maybe_next_character = parser.peek();
 
@@ -56,7 +50,7 @@ impl AST {
                 // the first item in a list defines its behavior.
                 let first_item = first_item_maybe.unwrap();
 
-                let mut parent_node = Box::new(List::new(first_item));
+                let mut parent_node = List::new(first_item);
 
                 while let Some(val) = self.read_form(parser) {
                     parent_node.add_child(val);
@@ -67,7 +61,7 @@ impl AST {
                     }
                 }
 
-                Some(parent_node as Box<dyn LispValue>)
+                Some(Box::new(LispValue::List(parent_node)))
             }
 
             ")" => {
@@ -78,9 +72,9 @@ impl AST {
         }
     }
 
-    fn read_atom(&self, parser: &mut Parser) -> Option<Box<dyn LispValue>> {
+    fn read_atom(&self, parser: &mut Parser) -> Option<Box<LispValue>> {
         parser.next().map(| val | {
-            Box::new(Atom::new(val.clone())) as Box<dyn LispValue>
+            Box::new(LispValue::Atom(Atom::new(val.clone())))
         })
     }
 
@@ -91,7 +85,10 @@ impl AST {
     pub fn print(&self) {
         match &self.root {
             None => println!("empty tree"),
-            Some(val) => val.print()
+            Some(val) => match val.as_ref() {
+                LispValue::List(l) => l.print(),
+                LispValue::Atom(l) => l.print()
+            }
         };
     }
 

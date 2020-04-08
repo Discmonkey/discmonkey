@@ -1,4 +1,4 @@
-use super::ast::{LispValue, LispType};
+use super::ast::{LispValue};
 use crate::reader::tokenizer::Token;
 
 pub struct Atom {
@@ -9,22 +9,12 @@ impl Atom {
     pub fn new(token: Token) -> Atom {
         Atom{token}
     }
-}
 
-impl LispValue for Atom {
-    fn print(&self) {
+    pub fn print(&self) {
         print!("{}", self.token);
     }
 
-    fn type_(&self) -> LispType {
-        LispType::Atom
-    }
-
-    fn children(&self) -> &Vec<Box<dyn LispValue>> {
-        unimplemented!()
-    }
-
-    fn symbol(&self) -> &Token {
+    pub fn token(&self) -> &Token {
         &self.token
     }
 }
