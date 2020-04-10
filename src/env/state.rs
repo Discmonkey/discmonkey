@@ -3,7 +3,6 @@ use crate::env::eval::LispResult;
 use std::collections::VecDeque;
 use super::math::{add, sub, mul, div};
 use std::rc::Rc;
-use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefCell;
 
 type Operator = fn(args: VecDeque<LispResult>) -> LispResult;

@@ -1,5 +1,5 @@
 use crate::types::ast::{LispValue};
-use crate::types::list::List;
+use crate::types::list::{List, first_token};
 use crate::types::atom::Atom;
 use crate::env::state::{Scope, LispEntry};
 use std::fmt;
@@ -29,117 +29,179 @@ impl fmt::Display for LispResult {
     }
 }
 
-pub fn eval_ast(root: &Box<LispValue>, mut env: &mut Scope) -> LispResult {
-    match root.as_ref() {
+pub fn eval_ast(root: &LispValue, mut env: &mut Scope) -> LispResult {
+    match root {
         LispValue::List(list) => eval_list(&list, &mut env),
         LispValue::Atom(atom) => eval_symbol(&atom, env)
     }
 }
 
 fn apply_def(list: &List,  env: &mut Scope) -> LispResult {
-    let children = list.children();
-
-    if children.len() != 2 {
+    if list.len() != 3 {
         return LispResult::Error("incorrect number of args for definition".to_string());
     }
 
-    match children[0].as_ref() {
+    match &list[1] {
         LispValue::Atom(a) => {
 
             // need to clone to insert into map
             let key = a.token().get_text().clone();
-            let value = eval_ast(&children[1], env);
+            let value = eval_ast(&list[2], env);
 
             env.set(key.clone(), LispEntry::Value(value.clone()));
 
             value
         }
 
-        LispValue::List(l) => LispResult::Error("first argument to def! must be a string".to_string())
+        LispValue::List(_l) => LispResult::Error("first argument to def! must be a symbol".to_string())
     }
 }
 
-fn apply_op(op: &String, list: &List, env: &mut Scope) -> LispResult {
+fn apply_op(list: &List, env: &mut Scope) -> LispResult {
+    let op = list.first();
 
-    // we can potentially mutate the environment -- which is weird
-    let results : VecDeque<LispResult> = list
-        .children()
-        .iter()
-        .map( |x| eval_ast(x, env))
-        .collect();
 
-    let f = env.get(op);
+    match op {
+        None => LispResult::Nil,
+        Some(l) => {
+            match l {
+                LispValue::Atom(a) => {
+                    let results : VecDeque<LispResult> = list
+                        .iter()
+                        .skip(1)
+                        .map( |x| eval_ast(x, env))
+                        .collect();
 
-    match f {
-        None => LispResult::Error(format!("no defined op: {}", op).to_string()),
+                    let op_name = a.token().get_text();
 
-        Some(maybe_func) => {
-            match maybe_func {
-                LispEntry::Func(func) => func(results),
-                _ => LispResult::Error(
-                    format!("symbol '{}' not associated with function", op).to_string()
-                )
+                    match env.get(op_name) {
+                        Some(LispEntry::Func(func)) => {
+                           func(results)
+                        }
+
+                        _ => LispResult::Error(
+                            format!("symbol '{}' not associated with function",
+                                    op_name).to_string())
+                    }
+                }
+
+                _ => LispResult::Error("cannot use list as op to evaluate".to_string())
             }
         }
     }
+
+    // we can potentially mutate the environment -- which is weird
+
 }
 
 /// lisp let rules are somewhat complicated and this method does not do a good job of making them not compliated.
 fn apply_let(list: &List, env: &mut Scope) -> LispResult {
-    let children = list.children();
-
-    if children.len() != 2 {
-        return LispResult::Error("let* requires at most two arguments in list".to_string())
+    if list.len() != 3 {
+        return LispResult::Error("let* two arguments in list".to_string())
     }
 
     // safe unwrap since we pre-check the length
-    // on the other hand
-    match children.get(0).unwrap().as_ref() {
-        LispValue::Atom(a) => LispResult::Error("first argument to let* must be assignment list".to_string()),
+    match list.get(1).unwrap() {
         LispValue::List(assignment_list) => {
-            let assignment_pairs = assignment_list.children();
 
             let mut new_scope = env.new_scope();
-            let mut key = assignment_list.symbol().get_text();
+            let mut key= "".to_string();
+            let mut rvalue;
 
-            for (i, val) in assignment_pairs.iter().enumerate() {
-                match i % 2 {
-                    0 => {
-                        let rvalue = eval_ast(val, &mut new_scope);
-                        new_scope.set(key.clone(), Value(rvalue));
-                    }
-                    _ => {
-                        match val.as_ref() {
-                            LispValue::Atom(a) => key = a.token().get_text(),
-                            LispValue::List(l) => {
-                                return LispResult::Error("assignment list even argument be string symbol".to_string())
-                            }
+            for (i, val) in assignment_list.iter().enumerate() {
+                if i % 2  == 0 {
+                    match val {
+                        LispValue::Atom(a) => key = a.token().get_text().clone(),
+                        LispValue::List(_l) => {
+                            return LispResult::Error("assignment list even argument be string symbol".to_string())
                         }
                     }
+                } else {
+                    rvalue = eval_ast(val, &mut new_scope);
+
+                    if let LispResult::Error(e) = rvalue {
+                        return LispResult::Error(e)
+                    }
+
+                    new_scope.set(key.clone(), Value(rvalue));
                 }
             }
 
-            let eval = children.get(1).unwrap();
+            let eval = list.get(2).unwrap();
 
 
             eval_ast(eval, &mut new_scope)
         }
+
+        LispValue::Atom(_a) => LispResult::Error("first argument to let* must be assignment list".to_string()),
     }
 }
 
+fn apply_do(list: &List, env: &mut Scope) -> LispResult {
+    list.iter().skip(1).map(|item| {
+        eval_ast(item, env)
+    }).last().unwrap_or(LispResult::Nil)
+}
 
+fn apply_if(list: &List, env: &mut Scope) -> LispResult {
+    let length = list.len();
 
-pub fn eval_list(list: &List, env: &mut Scope) -> LispResult {
-    let op = list.symbol().get_text(); // *, +, /, etc
-
-    match op.as_str() {
-        "def!" => apply_def(list, env),
-        "let*" => apply_let(list, env),
-        "do" => apply_do(list, env),
-        "if" => apply_if(list, env),
-        _ => apply_op(op, list, env)
+    // (if true)
+    if length < 3 {
+        return LispResult::Error("if statement needs at least one statement to execute".to_string())
     }
 
+    // if(true (stmt) (stmt) (some extra stuff))
+    if length > 4 {
+        return LispResult::Error("if statement can have at most two arms".to_string())
+    }
+
+    let boolean_flag = eval_ast(&list[1], env);
+
+    match boolean_flag {
+        LispResult::Boolean(false) | LispResult::Nil  => {
+            match length {
+                2 => eval_ast(&list[3], env),
+                _ => LispResult::Nil
+            }
+        },
+        // don't evaluate on error
+        LispResult::Error(s) => LispResult::Error(s),
+
+        // everything else is considered "truthy"
+        _ => {
+            eval_ast(&list[2], env)
+        }
+    }
+
+}
+
+pub fn apply_fn(list: &List, env: &mut Scope) -> LispResult {
+
+    unimplemented!()
+}
+
+pub fn eval_list(list: &List, env: &mut Scope) -> LispResult {
+
+    if list.len() == 0 {
+        return LispResult::Nil
+    }
+
+    let op = first_token(list);
+
+    match op {
+        None => LispResult::Error("first token in list must be function or symbol".to_string()),
+        Some(t) => {
+            match t.get_text().as_str() {
+                "def!" => apply_def(list, env),
+                "let*" => apply_let(list, env),
+                "do" => apply_do(list, env),
+                "if" => apply_if(list, env),
+                "lambda" => apply_fn(list, env),
+                _ => apply_op(list, env)
+            }
+        }
+    }
 }
 
 pub fn eval_symbol(atom: &Atom, env: &Scope) -> LispResult {

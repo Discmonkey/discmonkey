@@ -153,9 +153,20 @@ mod test {
             }
         }
 
+    }
 
+    #[test]
+    fn edge_case_with_empty_func_call() {
+        let r = Tokenizer::new();
+        let line = "((+))".to_string();
 
-
+        match r.tokenize(line) {
+            Err(m) => assert!(false),
+            Ok(result) => {
+                assert_eq!(result[0].get_text(), "(");
+                assert_eq!(result[4].get_text(), ")");
+            }
+        }
     }
 
     #[test]

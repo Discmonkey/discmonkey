@@ -1,97 +1,44 @@
 use super::reader::parser::Parser;
 use super::atom::Atom;
 use super::list::List;
-use crate::reader::tokenizer::Token;
-
 
 pub enum LispValue {
     List(List),
     Atom(Atom)
 }
 
-pub type Link = Option<Box<LispValue>>;
+pub type AST = LispValue;
 
-pub struct AST {
-    root: Link,
+// first draft is assuming we checked for parentheses issues
+pub fn build_ast(parser: &mut Parser) -> LispValue {
+    read_form(parser)
 }
 
-impl AST {
-
-    pub fn new() -> Self {
-        AST {
-            root: None
-        }
+fn read_form(parser: &mut Parser) -> LispValue {
+    match parser.peek().unwrap().get_text().as_str() {
+        "(" => LispValue::List(read_list(parser)),
+        _ => LispValue::Atom(read_atom(parser))
     }
+}
 
-    pub fn build(&mut self, parser: &mut Parser){
-        self.root = self.read_form(parser);
-    }
+fn read_list(parser: &mut Parser) -> List {
+    parser.next();
 
-    fn read_form(&self,  parser: &mut Parser) -> Option<Box<LispValue>> {
-
-        let maybe_next_character = parser.peek();
-
-        if maybe_next_character.is_none() {
-            return None
-        }
-
-        match maybe_next_character.unwrap().get_text().as_str() {
-            "(" => {
-                parser.next(); // consume token for "("
-
-                let first_item_maybe = parser.next();
-
-                // is this the correct behavior?
-                // what is an () in Lisp?
-                if first_item_maybe.is_none() {
-                    return None
-                }
-
-                // the first item in a list defines its behavior.
-                let first_item = first_item_maybe.unwrap();
-
-                let mut parent_node = List::new(first_item);
-
-                while let Some(val) = self.read_form(parser) {
-                    parent_node.add_child(val);
-
-                    if parser.peek().unwrap().get_text().as_str() == ")" {
-                        parser.next();
-                        break;
-                    }
-                }
-
-                Some(Box::new(LispValue::List(parent_node)))
-            }
-
+    let mut l = List::new();
+    // we've confirmed that there's always a matching ")"
+    loop {
+        match parser.peek().unwrap().get_text().as_str() {
             ")" => {
-                None
-            }
-
-            _ => self.read_atom(parser)
-        }
-    }
-
-    fn read_atom(&self, parser: &mut Parser) -> Option<Box<LispValue>> {
-        parser.next().map(| val | {
-            Box::new(LispValue::Atom(Atom::new(val.clone())))
-        })
-    }
-
-    pub fn root(&self) -> &Link {
-        &self.root
-    }
-
-    pub fn print(&self) {
-        match &self.root {
-            None => println!("empty tree"),
-            Some(val) => match val.as_ref() {
-                LispValue::List(l) => l.print(),
-                LispValue::Atom(l) => l.print()
-            }
+                parser.next();
+                break;
+            },
+            _ => l.push(read_form(parser))
         };
     }
 
+    l
+}
 
-
+fn read_atom(parser: &mut Parser) -> Atom {
+    Atom::new(parser.next().unwrap())
 }

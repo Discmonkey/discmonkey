@@ -1,17 +1,14 @@
 use lispinrust::io::UserIO;
 use lispinrust::reader::tokenizer::{Tokenizer, Tokens};
-use lispinrust::types::ast::AST;
+use lispinrust::types::ast::{AST, build_ast};
 use lispinrust::reader::parser::Parser;
 use lispinrust::env::eval::eval_ast;
 use lispinrust::env::state::Scope;
 
 fn make_ast(tokens: Tokens) -> AST {
     let mut parser = Parser::new(tokens);
-    let mut ast = AST::new();
 
-    ast.build(&mut parser);
-
-    ast
+    build_ast(&mut parser)
 }
 
 fn main() {
@@ -46,11 +43,7 @@ fn main() {
             Err(error) => println!("{}", error),
 
             Ok(tokens) => {
-
-                if let Some(root) = make_ast(tokens).root() {
-                    println!("{}", eval_ast(root, &mut env))
-                }
-
+                println!("{}", eval_ast(&make_ast(tokens), &mut env));
             }
         }
 
