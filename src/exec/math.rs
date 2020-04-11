@@ -1,8 +1,8 @@
 
 use std::collections::VecDeque;
 use crate::types::list::List;
-use crate::exec::env::{Env, Scope, LispEntry};
-use crate::exec::eval::{LispResult, eval_ast};
+use crate::exec::env::{Scope, LispResult};
+use crate::exec::eval::{eval_ast};
 
 
 macro_rules! operate {

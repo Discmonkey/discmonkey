@@ -1,6 +1,7 @@
 
 use crate::reader::tokenizer::Token;
 
+#[derive(Clone)]
 pub struct Atom {
     token: Token
 }

@@ -1,20 +1,9 @@
 use crate::types::ast::{LispValue};
 use crate::types::list::{List};
 use crate::types::atom::Atom;
-use crate::exec::env::{Scope, LispEntry};
-use crate::exec::core::{apply_let, apply_do, apply_if};
+use crate::exec::env::{Scope, LispResult};
 use std::fmt;
-use std::collections::VecDeque;
 
-#[derive(Clone)]
-pub enum LispResult {
-    Int(i64),
-    Float(f64),
-    Nil,
-    Boolean(bool),
-    Error(String),
-    Closure()
-}
 
 impl fmt::Display for LispResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -24,7 +13,8 @@ impl fmt::Display for LispResult {
             LispResult::Float(float) => write!(f, "{}", float),
             LispResult::Error(message) => write!(f, "{}", message),
             LispResult::Boolean(b) => write!(f, "{}", b),
-            LispResult::Nil => write!(f, "nil")
+            LispResult::Nil => write!(f, "nil"),
+            LispResult::Function(_l) => write!(f, "#<lambda>")
         }
 
     }
@@ -37,52 +27,18 @@ pub fn eval_ast(root: &LispValue, mut env: &mut Scope) -> LispResult {
     }
 }
 
-fn apply_def(list: &List,  env: &mut Scope) -> LispResult {
-    if list.len() != 3 {
-        return LispResult::Error("incorrect number of args for definition".to_string());
-    }
-
-    match &list[1] {
-        LispValue::Atom(a) => {
-
-            // need to clone to insert into map
-            let key = a.token().get_text().clone();
-            let value = eval_ast(&list[2], env);
-
-            env.set(key.clone(), LispEntry::Value(value.clone()));
-
-            value
-        }
-
-        LispValue::List(_l) => LispResult::Error("first argument to def! must be a symbol".to_string())
-    }
-}
-
-pub fn apply_fn(list: &List, env: &mut Scope) -> LispResult {
-
-    unimplemented!()
-}
-
 pub fn eval_list(list: &List, env: &mut Scope) -> LispResult {
 
     if list.len() == 0 {
         return LispResult::Nil
     }
 
-    let op = list.first_token();
-
-
+    let op = eval_ast(&list[0], env);
 
     match op {
-        None => LispResult::Error("first token in list must be function or symbol".to_string()),
-        Some(t) => {
-            let maybe_func = env.get(t.get_text());
-
-            match maybe_func {
-                Some(LispEntry::Func(f)) => f(list, env),
-                _ => LispResult::Error(format!("no function with identifier: {}", t.get_text()))
-            }
-        }
+        LispResult::Function(f) => f(list, env),
+        LispResult::Error(s) => LispResult::Error(s),
+        _ => op
     }
 }
 
@@ -91,8 +47,8 @@ pub fn eval_symbol(atom: &Atom, env: &Scope) -> LispResult {
 
     // check if this symbol is defined
     // note that this means our language currently allows for redefinitions
-    if let Some(LispEntry::Value(res)) = env.get(string) {
-        return res.clone()
+    if let Some(result) = env.get(string) {
+        return result.clone()
     }
 
     // in order try nil, true, false and finally check for floats and ints

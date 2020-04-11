@@ -2,6 +2,7 @@ use super::reader::parser::Parser;
 use super::atom::Atom;
 use super::list::List;
 
+#[derive(Clone)]
 pub enum LispValue {
     List(List),
     Atom(Atom)

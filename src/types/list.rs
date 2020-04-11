@@ -1,8 +1,8 @@
 use super::ast::{LispValue};
 use crate::reader::tokenizer::Token;
 use std::ops::Index;
-use std::slice::Iter;
 
+#[derive(Clone)]
 pub struct List {
     items: Vec<LispValue>
 }
