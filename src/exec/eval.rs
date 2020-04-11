@@ -1,10 +1,10 @@
 use crate::types::ast::{LispValue};
-use crate::types::list::{List, first_token};
+use crate::types::list::{List};
 use crate::types::atom::Atom;
-use crate::env::state::{Scope, LispEntry};
+use crate::exec::env::{Scope, LispEntry};
+use crate::exec::core::{apply_let, apply_do, apply_if};
 use std::fmt;
 use std::collections::VecDeque;
-use crate::env::state::LispEntry::Value;
 
 #[derive(Clone)]
 pub enum LispResult {
@@ -12,7 +12,8 @@ pub enum LispResult {
     Float(f64),
     Nil,
     Boolean(bool),
-    Error(String)
+    Error(String),
+    Closure()
 }
 
 impl fmt::Display for LispResult {
@@ -57,125 +58,6 @@ fn apply_def(list: &List,  env: &mut Scope) -> LispResult {
     }
 }
 
-fn apply_op(list: &List, env: &mut Scope) -> LispResult {
-    let op = list.first();
-
-
-    match op {
-        None => LispResult::Nil,
-        Some(l) => {
-            match l {
-                LispValue::Atom(a) => {
-                    let results : VecDeque<LispResult> = list
-                        .iter()
-                        .skip(1)
-                        .map( |x| eval_ast(x, env))
-                        .collect();
-
-                    let op_name = a.token().get_text();
-
-                    match env.get(op_name) {
-                        Some(LispEntry::Func(func)) => {
-                           func(results)
-                        }
-
-                        _ => LispResult::Error(
-                            format!("symbol '{}' not associated with function",
-                                    op_name).to_string())
-                    }
-                }
-
-                _ => LispResult::Error("cannot use list as op to evaluate".to_string())
-            }
-        }
-    }
-
-    // we can potentially mutate the environment -- which is weird
-
-}
-
-/// lisp let rules are somewhat complicated and this method does not do a good job of making them not compliated.
-fn apply_let(list: &List, env: &mut Scope) -> LispResult {
-    if list.len() != 3 {
-        return LispResult::Error("let* two arguments in list".to_string())
-    }
-
-    // safe unwrap since we pre-check the length
-    match list.get(1).unwrap() {
-        LispValue::List(assignment_list) => {
-
-            let mut new_scope = env.new_scope();
-            let mut key= "".to_string();
-            let mut rvalue;
-
-            for (i, val) in assignment_list.iter().enumerate() {
-                if i % 2  == 0 {
-                    match val {
-                        LispValue::Atom(a) => key = a.token().get_text().clone(),
-                        LispValue::List(_l) => {
-                            return LispResult::Error("assignment list even argument be string symbol".to_string())
-                        }
-                    }
-                } else {
-                    rvalue = eval_ast(val, &mut new_scope);
-
-                    if let LispResult::Error(e) = rvalue {
-                        return LispResult::Error(e)
-                    }
-
-                    new_scope.set(key.clone(), Value(rvalue));
-                }
-            }
-
-            let eval = list.get(2).unwrap();
-
-
-            eval_ast(eval, &mut new_scope)
-        }
-
-        LispValue::Atom(_a) => LispResult::Error("first argument to let* must be assignment list".to_string()),
-    }
-}
-
-fn apply_do(list: &List, env: &mut Scope) -> LispResult {
-    list.iter().skip(1).map(|item| {
-        eval_ast(item, env)
-    }).last().unwrap_or(LispResult::Nil)
-}
-
-fn apply_if(list: &List, env: &mut Scope) -> LispResult {
-    let length = list.len();
-
-    // (if true)
-    if length < 3 {
-        return LispResult::Error("if statement needs at least one statement to execute".to_string())
-    }
-
-    // if(true (stmt) (stmt) (some extra stuff))
-    if length > 4 {
-        return LispResult::Error("if statement can have at most two arms".to_string())
-    }
-
-    let boolean_flag = eval_ast(&list[1], env);
-
-    match boolean_flag {
-        LispResult::Boolean(false) | LispResult::Nil  => {
-            match length {
-                2 => eval_ast(&list[3], env),
-                _ => LispResult::Nil
-            }
-        },
-        // don't evaluate on error
-        LispResult::Error(s) => LispResult::Error(s),
-
-        // everything else is considered "truthy"
-        _ => {
-            eval_ast(&list[2], env)
-        }
-    }
-
-}
-
 pub fn apply_fn(list: &List, env: &mut Scope) -> LispResult {
 
     unimplemented!()
@@ -187,18 +69,18 @@ pub fn eval_list(list: &List, env: &mut Scope) -> LispResult {
         return LispResult::Nil
     }
 
-    let op = first_token(list);
+    let op = list.first_token();
+
+
 
     match op {
         None => LispResult::Error("first token in list must be function or symbol".to_string()),
         Some(t) => {
-            match t.get_text().as_str() {
-                "def!" => apply_def(list, env),
-                "let*" => apply_let(list, env),
-                "do" => apply_do(list, env),
-                "if" => apply_if(list, env),
-                "lambda" => apply_fn(list, env),
-                _ => apply_op(list, env)
+            let maybe_func = env.get(t.get_text());
+
+            match maybe_func {
+                Some(LispEntry::Func(f)) => f(list, env),
+                _ => LispResult::Error(format!("no function with identifier: {}", t.get_text()))
             }
         }
     }
@@ -238,8 +120,7 @@ mod test {
     use crate::reader::tokenizer::{Token, TokenType};
     use crate::types::atom::Atom;
     use crate::types::ast::LispValue;
-    use crate::env::state;
-    use crate::env::state::Scope;
+    use crate::exec::env::Scope;
 
     #[test]
     fn test_ints_and_floats() {

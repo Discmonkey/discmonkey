@@ -1,11 +1,13 @@
 use std::collections::HashMap;
-use crate::env::eval::LispResult;
 use std::collections::VecDeque;
 use super::math::{add, sub, mul, div};
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::types::list::List;
+use crate::exec::eval::LispResult;
+use crate::exec::core::{apply_do, apply_let, apply_if};
 
-type Operator = fn(args: VecDeque<LispResult>) -> LispResult;
+type Operator = fn(args: &List, &mut Scope) -> LispResult;
 
 #[derive(Clone)]
 pub enum LispEntry {
@@ -41,11 +43,13 @@ impl Scope {
     // that they can actually be pretty freely redefined.
     pub fn new() -> Self {
         let mut map: HashMap<String, LispEntry> = HashMap::new();
-
         map.insert("+".to_string(), LispEntry::Func(add));
         map.insert("-".to_string(), LispEntry::Func(sub));
         map.insert("*".to_string(), LispEntry::Func(mul));
         map.insert("/".to_string(), LispEntry::Func(div));
+        map.insert("do".to_string(), LispEntry::Func(apply_do));
+        map.insert("let*".to_string(), LispEntry::Func(apply_let));
+        map.insert("if".to_string(), LispEntry::Func(apply_if));
 
         let env = Rc::new(RefCell::new(Env {
             data: map,

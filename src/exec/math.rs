@@ -1,5 +1,8 @@
-use crate::env::eval::LispResult;
+
 use std::collections::VecDeque;
+use crate::types::list::List;
+use crate::exec::env::{Env, Scope, LispEntry};
+use crate::exec::eval::{LispResult, eval_ast};
 
 
 macro_rules! operate {
@@ -32,7 +35,6 @@ fn add_helper(a: LispResult, b: LispResult) -> LispResult {
     operate!(+, a, b)
 }
 
-
 fn sub_helper(a: LispResult, b: LispResult) -> LispResult {
     operate!(-, a, b)
 }
@@ -47,28 +49,45 @@ fn div_helper(a: LispResult, b: LispResult) -> LispResult {
 
 macro_rules! gen_reducer {
     ($operator:ident, $deque:expr) => {
+
         if let Some(accumulator) = $deque.pop_front() {
-            $deque.into_iter().fold(
-                accumulator,  | total, next | $operator(total, next)
-            )
+            $deque
+                .into_iter()
+                .fold(
+                    accumulator,  | total, next | $operator(total, next)
+                )
         } else {
             LispResult::Error("function called with no arguments".to_string())
         }
     }
 }
 
-pub (super) fn add (mut args: VecDeque<LispResult>) -> LispResult {
-    gen_reducer!(add_helper, args)
+fn prepare_args(args: &List, env: &mut Scope) -> VecDeque<LispResult> {
+    args.items()
+        .iter()
+        .skip(1)
+        .map(|x| eval_ast(x, env))
+        .collect()
 }
 
-pub (super) fn sub (mut args: VecDeque<LispResult>) -> LispResult {
-    gen_reducer!(sub_helper, args)
+
+
+pub (super) fn add (args: &List, mut env: &mut Scope) -> LispResult {
+    let mut mapped = prepare_args(args, &mut env);
+    gen_reducer!(add_helper, mapped)
 }
 
-pub (super) fn mul (mut args: VecDeque<LispResult>) -> LispResult {
-    gen_reducer!(mul_helper, args)
+pub (super) fn sub (args: &List, env: &mut Scope) -> LispResult {
+    let mut mapped = prepare_args(args, env);
+    gen_reducer!(sub_helper, mapped)
 }
 
-pub (super) fn div (mut args: VecDeque<LispResult>) -> LispResult {
-    gen_reducer!(div_helper, args)
+pub (super) fn mul (args: &List, env: &mut Scope) -> LispResult {
+    let mut mapped = prepare_args(args, env);
+    gen_reducer!(mul_helper, mapped)
+}
+
+pub (super) fn div (args: &List, env: &mut Scope) -> LispResult {
+    let mut mapped = prepare_args(args, env);
+    gen_reducer!(div_helper, mapped)
 }

@@ -2,8 +2,8 @@ use lispinrust::io::UserIO;
 use lispinrust::reader::tokenizer::{Tokenizer, Tokens};
 use lispinrust::types::ast::{AST, build_ast};
 use lispinrust::reader::parser::Parser;
-use lispinrust::env::eval::eval_ast;
-use lispinrust::env::state::Scope;
+use lispinrust::exec::eval::eval_ast;
+use lispinrust::exec::env::Scope;
 
 fn make_ast(tokens: Tokens) -> AST {
     let mut parser = Parser::new(tokens);
