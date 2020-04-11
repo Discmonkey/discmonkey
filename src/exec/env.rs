@@ -3,8 +3,8 @@ use super::math::{add, sub, mul, div};
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::types::list::List;
-use crate::exec::core::{apply_do, apply_let, apply_if, create_func, apply_def};
-
+use crate::exec::core_recursive::{apply_do, apply_let, apply_if, create_func, apply_def};
+use crate::exec::core_utility::apply_equals;
 
 pub type Lambda = Rc<dyn Fn(&List, &mut Scope) -> LispResult>;
 
@@ -40,21 +40,29 @@ impl Env {
     }
 }
 
+macro_rules! to_func {
+    ($f:expr) => {
+        LispResult::Function(Rc::new($f))
+    }
+}
+
 impl Scope {
 
     // the math functions live at the base scope level, which also means
     // that they can actually be pretty freely redefined.
     pub fn new() -> Self {
         let mut map: HashMap<String, LispResult> = HashMap::new();
-        map.insert("+".to_string(), LispResult::Function(Rc::new(add)));
-        map.insert("-".to_string(), LispResult::Function(Rc::new(sub)));
-        map.insert("*".to_string(), LispResult::Function(Rc::new(mul)));
-        map.insert("/".to_string(), LispResult::Function(Rc::new(div)));
-        map.insert("do".to_string(), LispResult::Function(Rc::new(apply_do)));
-        map.insert("let*".to_string(), LispResult::Function(Rc::new(apply_let)));
-        map.insert("if".to_string(), LispResult::Function(Rc::new(apply_if)));
-        map.insert("lambda".to_string(), LispResult::Function(Rc::new(create_func)));
-        map.insert("def!".to_string(), LispResult::Function(Rc::new(apply_def)));
+        map.insert("+".to_string(), to_func!(add));
+        map.insert("-".to_string(), to_func!(sub));
+        map.insert("*".to_string(), to_func!(mul));
+        map.insert("/".to_string(), to_func!(div));
+        map.insert("do".to_string(), to_func!(apply_do));
+        map.insert("let*".to_string(), to_func!(apply_let));
+        map.insert("if".to_string(), to_func!(apply_if));
+        map.insert("lambda".to_string(), to_func!(create_func));
+        map.insert("def!".to_string(), to_func!(apply_def));
+        map.insert("=".to_string(), to_func!(apply_equals));
+
         let env = Rc::new(RefCell::new(Env {
             data: map,
             outer: None
