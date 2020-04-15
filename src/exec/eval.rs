@@ -3,6 +3,7 @@ use crate::types::list::{List};
 use crate::types::atom::Atom;
 use crate::exec::env::{Scope, LispResult};
 use std::fmt;
+use crate::reader::tokenizer::TokenType;
 
 
 impl fmt::Display for LispResult {
@@ -11,10 +12,11 @@ impl fmt::Display for LispResult {
         match self {
             LispResult::Int(i) => write!(f, "{}", i),
             LispResult::Float(float) => write!(f, "{}", float),
-            LispResult::Error(message) => write!(f, "{}", message),
+            LispResult::Error(message) => write!(f, "error - {}", message),
             LispResult::Boolean(b) => write!(f, "{}", b),
             LispResult::Nil => write!(f, "nil"),
-            LispResult::Function(_l) => write!(f, "#<lambda>")
+            LispResult::Function(_l) => write!(f, "#<lambda>"),
+            LispResult::String(s) => write!(f, "\"{}\"", s)
         }
 
     }
@@ -42,9 +44,25 @@ pub fn eval_list(list: &List, env: &mut Scope) -> LispResult {
     }
 }
 
-pub fn eval_symbol(atom: &Atom, env: &Scope) -> LispResult {
-    let string = atom.token().get_text();
+fn convert_string(s: &String) -> LispResult {
+    if !s.starts_with("\"")|| !s.ends_with("\"") {
+        LispResult::Error("malformatted string".to_string())
+    } else {
+        let mut copy = s.clone();
+        copy.pop();
+        copy.remove(0);
 
+        LispResult::String(copy)
+    }
+}
+
+pub fn eval_symbol(atom: &Atom, env: &Scope) -> LispResult {
+    if atom.token().get_type() == TokenType::String {
+        return convert_string(atom.token().get_text())
+    }
+
+
+    let string = atom.token().get_text();
     // check if this symbol is defined
     // note that this means our language currently allows for redefinitions
     if let Some(result) = env.get(string) {

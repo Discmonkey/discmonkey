@@ -16,6 +16,7 @@ pub enum LispResult {
     Boolean(bool),
     Function(Lambda),
     Error(String),
+    String(String)
 }
 
 pub struct Scope {

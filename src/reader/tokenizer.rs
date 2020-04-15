@@ -4,7 +4,7 @@ use std::fmt;
 use std::collections::VecDeque;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum TokenType {
     SpecialTwo,
     SpecialOne,
@@ -26,8 +26,8 @@ impl Token {
         }
     }
 
-    pub fn get_type(&self) -> &TokenType {
-        &self.token_type
+    pub fn get_type(&self) -> TokenType {
+        self.token_type
     }
 
     pub fn get_text(&self) -> &String {

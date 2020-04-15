@@ -29,7 +29,8 @@ macro_rules! comp_op {
                 LispResult::Function(_f) => LispResult::Boolean(false),
                 LispResult::Float(f) => comp!($op, Float, f, r),
                 LispResult::Int(i) => comp!($op, Int, i, r),
-                LispResult::Boolean(_b) => LispResult::Boolean(false)
+                LispResult::Boolean(_b) => LispResult::Boolean(false),
+                LispResult::String(_s) => LispResult::Boolean(false)
             }
         }
 
@@ -51,7 +52,8 @@ pub (super) fn apply_equals(list: &List, env: &mut Scope) -> LispResult {
         LispResult::Function(_f) => LispResult::Boolean(false),
         LispResult::Float(f) => comp!(==, Float, f, r),
         LispResult::Int(i) => comp!(==, Int, i, r),
-        LispResult::Boolean(b) => comp!(==, Boolean, b, r)
+        LispResult::Boolean(b) => comp!(==, Boolean, b, r),
+        LispResult::String(s) => comp!(==, String, s, r)
     }
 
 }
