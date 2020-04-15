@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::types::list::List;
 use crate::exec::core_recursive::{apply_do, apply_let, apply_if, create_func, apply_def};
-use crate::exec::core_utility::apply_equals;
+use crate::exec::core_comparison::{apply_equals, apply_greater_than, apply_greater_than_equals, apply_less_than, apply_less_than_equals};
 
 pub type Lambda = Rc<dyn Fn(&List, &mut Scope) -> LispResult>;
 
@@ -46,22 +46,34 @@ macro_rules! to_func {
     }
 }
 
+macro_rules! insert {
+    ($m:expr, $key:literal, $func:ident) => {
+         $m.insert($key.to_string(), to_func!($func));
+    }
+}
+
 impl Scope {
 
     // the math functions live at the base scope level, which also means
     // that they can actually be pretty freely redefined.
     pub fn new() -> Self {
         let mut map: HashMap<String, LispResult> = HashMap::new();
-        map.insert("+".to_string(), to_func!(add));
-        map.insert("-".to_string(), to_func!(sub));
-        map.insert("*".to_string(), to_func!(mul));
-        map.insert("/".to_string(), to_func!(div));
-        map.insert("do".to_string(), to_func!(apply_do));
-        map.insert("let*".to_string(), to_func!(apply_let));
-        map.insert("if".to_string(), to_func!(apply_if));
-        map.insert("lambda".to_string(), to_func!(create_func));
-        map.insert("def!".to_string(), to_func!(apply_def));
-        map.insert("=".to_string(), to_func!(apply_equals));
+        insert!(map, "+", add);
+        insert!(map, "-", sub);
+        insert!(map, "/", div);
+        insert!(map, "*", mul);
+
+        insert!(map, "do", apply_do);
+        insert!(map, "let*", apply_let);
+        insert!(map, "if", apply_if);
+        insert!(map, "lambda", create_func);
+        insert!(map, "def!", apply_def);
+
+        insert!(map, "=", apply_equals);
+        insert!(map, ">", apply_greater_than);
+        insert!(map, "<", apply_less_than);
+        insert!(map, "<=", apply_less_than_equals);
+        insert!(map, ">=", apply_greater_than_equals);
 
         let env = Rc::new(RefCell::new(Env {
             data: map,
