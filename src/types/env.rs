@@ -1,49 +1,44 @@
 use std::collections::HashMap;
-use super::math::{add, sub, mul, div};
 use std::rc::Rc;
 use std::cell::RefCell;
-use crate::types::list::List;
+
 use crate::exec::core_recursive::{apply_do, apply_let, apply_if, create_func, apply_def};
-use crate::exec::core_comparison::{apply_equals, apply_greater_than, apply_greater_than_equals, apply_less_than, apply_less_than_equals};
+use crate::exec::core_comparison::{apply_equals, apply_greater_than, apply_greater_than_equals,
+                                   apply_less_than, apply_less_than_equals};
 
-pub type Lambda = Rc<dyn Fn(&List, &mut Scope) -> LispResult>;
+use crate::exec::core_file::{apply_slurp};
+use crate::exec::math::{add, sub, mul, div};
+use crate::exec::core_utils::{apply_list, apply_eval, apply_str, apply_read_string, apply_prn};
 
-#[derive(Clone)]
-pub enum LispResult {
-    Int(i64),
-    Float(f64),
-    Nil,
-    Boolean(bool),
-    Function(Lambda),
-    Error(String),
-    String(String)
-}
+
+use crate::types::ast::LispValue;
+
 
 pub struct Scope {
     current: Rc<RefCell<Env>>
 }
 
 pub struct Env {
-    data: HashMap<String, LispResult>,
+    data: HashMap<String, LispValue>,
     outer: Option<Rc<RefCell<Env>>>
 }
 
 impl Env {
-    pub fn get(&self, key: &String) -> Option<LispResult> {
+    pub fn get(&self, key: &String) -> Option<LispValue> {
         // safe to unwrap here since find will insure that the key exists.
         self.data.get(key).map( | ref_result| {
             ref_result.clone()
         })
     }
 
-    pub fn insert(&mut self, key: String, entry: LispResult) {
+    pub fn insert(&mut self, key: String, entry: LispValue) {
         self.data.insert(key, entry);
     }
 }
 
 macro_rules! to_func {
     ($f:expr) => {
-        LispResult::Function(Rc::new($f))
+        LispValue::Function(Rc::new($f))
     }
 }
 
@@ -58,7 +53,7 @@ impl Scope {
     // the math functions live at the base scope level, which also means
     // that they can actually be pretty freely redefined.
     pub fn new() -> Self {
-        let mut map: HashMap<String, LispResult> = HashMap::new();
+        let mut map: HashMap<String, LispValue> = HashMap::new();
         insert!(map, "+", add);
         insert!(map, "-", sub);
         insert!(map, "/", div);
@@ -75,6 +70,13 @@ impl Scope {
         insert!(map, "<", apply_less_than);
         insert!(map, "<=", apply_less_than_equals);
         insert!(map, ">=", apply_greater_than_equals);
+
+        insert!(map, "slurp", apply_slurp);
+        insert!(map, "list", apply_list);
+        insert!(map, "eval", apply_eval);
+        insert!(map, "str", apply_str);
+        insert!(map, "read-string", apply_read_string);
+        insert!(map, "prn", apply_prn);
 
         let env = Rc::new(RefCell::new(Env {
             data: map,
@@ -101,7 +103,7 @@ impl Scope {
     }
 
 
-    pub fn set(&mut self, key: String, entry: LispResult) {
+    pub fn set(&mut self, key: String, entry: LispValue) {
         // one of many places were as_ref is used --
         // this *tricks* the Rc to correctly delegate the borrow_mut method call to the underlying refcell
         // otherwise everything is a mess.
@@ -122,10 +124,26 @@ impl Scope {
         None
     }
 
-    pub fn get(&self, key: &String) -> Option<LispResult> {
+    pub fn get(&self, key: &String) -> Option<LispValue> {
         match self.find(key) {
             None => None,
             Some(e) => e.as_ref().borrow().get(key)
         }
+    }
+
+    pub fn root(&mut self) -> Option<Scope> {
+        let mut env = Some(self.current.clone());
+
+        while let Some(e) = env {
+            if let None = e.as_ref().borrow().outer {
+                return Some(Scope {
+                    current: e.clone()
+                })
+            } else {
+                env = e.as_ref().borrow().outer.clone()
+            }
+        }
+
+        None
     }
 }

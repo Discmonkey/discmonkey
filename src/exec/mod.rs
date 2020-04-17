@@ -1,7 +1,7 @@
 pub mod eval;
-pub mod env;
-mod math;
-mod core_recursive;
-mod core_comparison;
-mod closure;
-mod file;
+pub mod math;
+pub mod core_comparison;
+pub mod core_file;
+pub mod core_recursive;
+pub mod core_utils;
+pub mod closure;

@@ -1,6 +1,7 @@
 use super::ast::{LispValue};
 use crate::reader::tokenizer::Token;
 use std::ops::Index;
+use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone)]
 pub struct List {
@@ -12,6 +13,12 @@ impl List {
     pub fn new() -> Self {
         List {
             items: Vec::new()
+        }
+    }
+
+    pub fn from_vec(items: Vec<LispValue>) -> Self {
+        List {
+            items
         }
     }
 
@@ -46,3 +53,14 @@ impl Index<usize> for List {
     }
 }
 
+impl Display for List {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "(")?;
+
+        for item in &self.items {
+            write!(f, "{}, ", item)?;
+        }
+
+        write!(f, ")")
+    }
+}

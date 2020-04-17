@@ -1,13 +1,12 @@
-use crate::exec::env::{Scope};
-use crate::types::ast::LispValue;
 use crate::reader::tokenizer::Token;
 use crate::types::list::List;
 use crate::exec::eval::{eval_ast};
-use crate::exec::env::Lambda;
 use std::rc::Rc;
 use std::borrow::BorrowMut;
+use crate::types::env::Scope;
+use crate::types::ast::{LispValue, Lambda};
 
-pub (super) fn create_closure(tokens: Vec<Token>, expr: LispValue)
+pub fn create_closure(tokens: Vec<Token>, expr: LispValue)
     -> Lambda {
 
     return Rc::new(move |args: &List, env: &mut Scope| {

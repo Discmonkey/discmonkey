@@ -67,7 +67,7 @@ impl Tokenizer {
     pub fn new() -> Self {
 
         let re = Regex::new(r#"(?x)
-            [\s,]* #skip white spaces
+            [\s]* #skip white spaces
             (?P<special_two>~@)
             |
             (?P<special_one>[\[\]{}()'`~^@])
@@ -76,7 +76,7 @@ impl Tokenizer {
             |
             (?P<comment>;.*)
             |
-            (?P<symbol>[^\s\[\]{}('"`,;)]*)"#);
+            (?P<symbol>[^\s\[\]{}('"`,;)]+)"#);
 
         Self{re: re.unwrap()}
     }
@@ -87,8 +87,11 @@ impl Tokenizer {
 
         let mut parentheses_count = 0; // needs to end at zero, otherwise syntax error
 
-
         for cap in self.re.captures_iter(&line) {
+            // need to fix this at some point...
+            if cap.len() == 0 {
+                continue;
+            }
 
             if let Some(m) = cap.name("symbol") {
                 v.push_back(Token::new(m.as_str().to_string(), TokenType::Symbol));
@@ -177,6 +180,34 @@ mod test {
         match r.tokenize(line) {
             Err(m) => assert!(true),
             Ok(result) => assert!(false)
+        }
+    }
+
+    #[test]
+    fn too_many_spaces() {
+        let r = Tokenizer::new();
+        let line = "(  + 4 4)".to_string();
+
+        match r.tokenize(line) {
+            Err(m) => assert!(false),
+            Ok(result) => {
+                assert_eq!(result[1].get_text(), "+");
+                assert_eq!(result[4].get_text(), ")");
+            }
+        }
+    }
+
+    #[test]
+    fn test_new_lines() {
+        let r = Tokenizer::new();
+        let line = "(\n  + 4\n 4\n)".to_string();
+
+        match r.tokenize(line) {
+            Err(m) => assert!(false),
+            Ok(result) => {
+                assert_eq!(result[1].get_text(), "+");
+                assert_eq!(result[4].get_text(), ")");
+            }
         }
     }
 }

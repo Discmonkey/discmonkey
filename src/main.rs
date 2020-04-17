@@ -1,14 +1,14 @@
 use lispinrust::io::UserIO;
-use lispinrust::reader::tokenizer::{Tokenizer, Tokens};
-use lispinrust::types::ast::{AST, build_ast};
-use lispinrust::reader::parser::Parser;
+use lispinrust::reader::tokenizer::{Tokenizer};
 use lispinrust::exec::eval::eval_ast;
-use lispinrust::exec::env::Scope;
+use lispinrust::types::env::Scope;
+use lispinrust::exec::core_utils::read_string;
 
-fn make_ast(tokens: Tokens) -> AST {
-    let mut parser = Parser::new(tokens);
-
-    build_ast(&mut parser)
+/// pre_load is for functions we want the user to have,
+/// but also defined within lisp and not on the core, interpreter level
+fn pre_load(tokenizer: &Tokenizer, mut env: &mut Scope) {
+    let read_file = read_string(&tokenizer, "(def! load-file (lambda (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))".to_string());
+    eval_ast(&read_file, &mut env);
 }
 
 fn main() {
@@ -17,6 +17,9 @@ fn main() {
     let tokenizer = Tokenizer::new();
     let mut maybe_line;
     let mut env = Scope::new();
+
+    // functions defined with mal
+    pre_load(&tokenizer, &mut env);
 
     loop {
         cmd.greet();
@@ -36,19 +39,8 @@ fn main() {
             continue;
         }
 
-
-        let result = tokenizer.tokenize(user_input);
-
-        match result {
-            Err(error) => println!("{}", error),
-
-            Ok(tokens) => {
-                println!("{}", eval_ast(&make_ast(tokens), &mut env));
-            }
-        }
-
-
-
+        let result = read_string(&tokenizer, user_input);
+        println!("{}", eval_ast(&result, &mut env))
 
     }
 

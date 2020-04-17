@@ -1,5 +1,6 @@
 
 use crate::reader::tokenizer::Token;
+use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone)]
 pub struct Atom {
@@ -17,5 +18,11 @@ impl Atom {
 
     pub fn token(&self) -> &Token {
         &self.token
+    }
+}
+
+impl Display for Atom {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.token)
     }
 }
