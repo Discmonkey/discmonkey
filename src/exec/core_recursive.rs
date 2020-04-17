@@ -21,7 +21,7 @@ pub fn apply_let(list: &List, env: &mut Scope) -> LispValue {
             for (i, val) in assignment_list.items().iter().enumerate() {
                 if i % 2  == 0 {
                     match val {
-                        LispValue::Atom(a) => key = a.token().get_text().clone(),
+                        LispValue::Unit(a) => key = a.token().get_text().clone(),
                         _ => {
                             return LispValue::Error("assignment list even argument be string symbol".to_string())
                         }
@@ -93,7 +93,7 @@ pub fn create_func(list: &List, _env: &mut Scope) -> LispValue {
         LispValue::List(l) => {
             for val in l.items() {
                 match val {
-                    LispValue::Atom(v) => {
+                    LispValue::Unit(v) => {
                         args.push(v.token().clone());
                     },
 
@@ -114,7 +114,7 @@ pub fn apply_def(list: &List,  env: &mut Scope) -> LispValue {
     }
 
     match &list[1] {
-        LispValue::Atom(a) => {
+        LispValue::Unit(a) => {
 
             // need to clone to insert into map
             let key = a.token().get_text().clone();

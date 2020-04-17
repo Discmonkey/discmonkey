@@ -24,7 +24,7 @@ impl List {
 
     pub fn first_token(&self) -> Option<&Token> {
         match self.items.first() {
-            Some(LispValue::Atom(a)) => {
+            Some(LispValue::Unit(a)) => {
                 Some(a.token())
             }
             _  => None,

@@ -1,6 +1,6 @@
 use crate::types::ast::{LispValue};
 use crate::types::list::{List};
-use crate::types::atom::Atom;
+use crate::types::unit::Unit;
 use crate::reader::tokenizer::TokenType;
 use crate::types::env::Scope;
 
@@ -9,7 +9,7 @@ use crate::types::env::Scope;
 pub fn eval_ast(root: &LispValue, mut env: &mut Scope) -> LispValue {
     match root {
         LispValue::List(list) => eval_list(&list, &mut env),
-        LispValue::Atom(atom) => eval_symbol(&atom, env),
+        LispValue::Unit(atom) => eval_symbol(&atom, env),
         _ => root.clone()
     }
 }
@@ -41,7 +41,7 @@ fn convert_string(s: &String) -> LispValue {
     }
 }
 
-pub fn eval_symbol(atom: &Atom, env: &mut Scope) -> LispValue {
+pub fn eval_symbol(atom: &Unit, env: &mut Scope) -> LispValue {
     if atom.token().get_type() == TokenType::String {
         return convert_string(atom.token().get_text())
     }
@@ -76,7 +76,7 @@ pub fn eval_symbol(atom: &Atom, env: &mut Scope) -> LispValue {
 mod test {
     use super::{eval_symbol, LispValue};
     use crate::reader::tokenizer::{Token, TokenType};
-    use crate::types::atom::Atom;
+    use crate::types::atom::Unit;
     use crate::types::env::Scope;
 
     #[test]
@@ -87,9 +87,9 @@ mod test {
         let test_token_int = Token::new("3".to_string(), TokenType::Symbol);
         let test_token_gibberish = Token::new("1984.38471jf".to_string(), TokenType::Symbol);
 
-        let lisp_value_float =Atom::new(test_token_float);
-        let lisp_value_int = Atom::new(test_token_int);
-        let lisp_val_bad = Atom::new(test_token_gibberish);
+        let lisp_value_float =Unit::new(test_token_float);
+        let lisp_value_int = Unit::new(test_token_int);
+        let lisp_val_bad = Unit::new(test_token_gibberish);
 
         match eval_symbol(&lisp_value_float, &mut env) {
             LispValue::Float(v) => assert_eq!(v, 3.14),
@@ -112,8 +112,8 @@ mod test {
     #[test]
     fn true_false() {
         let mut env = Scope::new();
-        let test_token_false = Atom::new(Token::new("false".to_string(), TokenType::Symbol));
-        let test_token_true = Atom::new(Token::new("true".to_string(), TokenType::Symbol));
+        let test_token_false = Unit::new(Token::new("false".to_string(), TokenType::Symbol));
+        let test_token_true = Unit::new(Token::new("true".to_string(), TokenType::Symbol));
 
         match eval_symbol(&(test_token_false), &mut env) {
             LispValue::Boolean(v) => assert!(!v),
@@ -130,7 +130,7 @@ mod test {
     fn test_nil() {
         let mut env = Scope::new();
 
-        let test_nil_token = Atom::new(Token::new("nil".to_string(), TokenType::Symbol));
+        let test_nil_token = Unit::new(Token::new("nil".to_string(), TokenType::Symbol));
 
         match eval_symbol(&test_nil_token, &mut env) {
             LispValue::Nil => assert!(true),

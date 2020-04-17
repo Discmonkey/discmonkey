@@ -1,5 +1,5 @@
 use super::reader::parser::Parser;
-use super::atom::Atom;
+use super::unit::Unit;
 use super::list::List;
 use crate::types::env::Scope;
 use std::rc::Rc;
@@ -10,14 +10,15 @@ pub type Lambda = Rc<dyn Fn(&List, &mut Scope) -> LispValue>;
 #[derive(Clone)]
 pub enum LispValue {
     List(List),
-    Atom(Atom),
+    Unit(Unit),
     Int(i64),
     Float(f64),
     Nil,
     Boolean(bool),
     Function(Lambda),
     Error(String),
-    String(String)
+    String(String),
+    Atom(Box<LispValue>)
 }
 
 pub type AST = LispValue;
@@ -34,12 +35,12 @@ impl Display for LispValue {
             LispValue::Function(_l) => write!(f, "#<lambda>"),
             LispValue::String(s) => write!(f, "{}", s),
             LispValue::List(l) => write!(f, "{}", l),
-            LispValue::Atom(a) => write!(f, "{}", a)
+            LispValue::Unit(a) => write!(f, "{}", a),
+            LispValue::Atom(b) => write!(f, "Atom <{}>", b.as_ref())
         }
 
     }
 }
-
 
 // first draft is assuming we checked for parentheses issues
 pub fn build_ast(parser: &mut Parser) -> LispValue {
@@ -49,7 +50,7 @@ pub fn build_ast(parser: &mut Parser) -> LispValue {
 fn read_form(parser: &mut Parser) -> LispValue {
     match parser.peek().unwrap().get_text().as_str() {
         "(" => LispValue::List(read_list(parser)),
-        _ => LispValue::Atom(read_atom(parser))
+        _ => LispValue::Unit(read_atom(parser))
     }
 }
 
@@ -71,6 +72,6 @@ fn read_list(parser: &mut Parser) -> List {
     l
 }
 
-fn read_atom(parser: &mut Parser) -> Atom {
-    Atom::new(parser.next().unwrap())
+fn read_atom(parser: &mut Parser) -> Unit {
+    Unit::new(parser.next().unwrap())
 }

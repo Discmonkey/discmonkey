@@ -8,7 +8,7 @@ use crate::exec::core_comparison::{apply_equals, apply_greater_than, apply_great
 
 use crate::exec::core_file::{apply_slurp};
 use crate::exec::math::{add, sub, mul, div};
-use crate::exec::core_utils::{apply_list, apply_eval, apply_str, apply_read_string, apply_prn};
+use crate::exec::core_utils::{apply_list, apply_eval, apply_str, apply_read_string, apply_prn, apply_atom};
 
 
 use crate::types::ast::LispValue;
@@ -77,6 +77,7 @@ impl Scope {
         insert!(map, "str", apply_str);
         insert!(map, "read-string", apply_read_string);
         insert!(map, "prn", apply_prn);
+        insert!(map, "atom", apply_atom);
 
         let env = Rc::new(RefCell::new(Env {
             data: map,
