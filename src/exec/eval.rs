@@ -33,7 +33,7 @@ pub fn eval_ast(root: &LispValue, mut env: &mut Scope) -> LispValue {
     }
 }
 
-pub fn eval_list(mut list: &List, env: &mut Scope) -> LispValue {
+pub fn eval_list(list: &List, env: &mut Scope) -> LispValue {
 
     if list.len() == 0 {
         return LispValue::Nil
@@ -44,7 +44,7 @@ pub fn eval_list(mut list: &List, env: &mut Scope) -> LispValue {
     match op {
         LispValue::Function(f) => f(list, env),
         LispValue::Error(s) => LispValue::Error(s),
-        _ => op
+        _ => LispValue::Error(format!("cannot evaluate list: {}", list).to_string())
     }
 }
 

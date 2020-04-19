@@ -91,7 +91,6 @@ impl Scope {
         insert!(map, "quote", apply_quote);
         insert!(map, "cons", apply_cons);
         insert!(map, "concat", apply_concat);
-
         insert!(map, "macro!", apply_macro);
 
         let env = Rc::new(RefCell::new(Env {

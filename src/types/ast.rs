@@ -5,6 +5,7 @@ use crate::types::env::Scope;
 use std::rc::Rc;
 use std::fmt::{Display, Formatter, Result};
 use std::cell::RefCell;
+use crate::types::reader_macros::{at_macro, quote_macro};
 
 pub type Lambda = Rc<dyn Fn(&List, &mut Scope) -> LispValue>;
 
@@ -52,10 +53,13 @@ pub fn build_ast(parser: &mut Parser) -> LispValue {
     read_form(parser)
 }
 
-fn read_form(parser: &mut Parser) -> LispValue {
+
+pub (crate) fn read_form(parser: &mut Parser) -> LispValue {
     match parser.peek().unwrap().get_text().as_str() {
         "(" => LispValue::List(read_list(parser)),
-        _ => LispValue::Unit(read_atom(parser))
+        "@" => at_macro(parser),
+        "'" => quote_macro(parser),
+        _ => LispValue::Unit(read_atom(parser)),
     }
 }
 
