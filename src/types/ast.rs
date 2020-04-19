@@ -4,6 +4,7 @@ use super::list::List;
 use crate::types::env::Scope;
 use std::rc::Rc;
 use std::fmt::{Display, Formatter, Result};
+use std::cell::RefCell;
 
 pub type Lambda = Rc<dyn Fn(&List, &mut Scope) -> LispValue>;
 
@@ -18,7 +19,9 @@ pub enum LispValue {
     Function(Lambda),
     Error(String),
     String(String),
-    Atom(Box<LispValue>)
+    // we need interior mutability here since we can potentially "swap" and "mutate" the contents of an atom
+    // they are inspired by the clojure atoms.
+    Atom(Rc<RefCell<LispValue>>)
 }
 
 pub type AST = LispValue;
@@ -36,7 +39,7 @@ impl Display for LispValue {
             LispValue::String(s) => write!(f, "{}", s),
             LispValue::List(l) => write!(f, "{}", l),
             LispValue::Unit(a) => write!(f, "{}", a),
-            LispValue::Atom(b) => write!(f, "Atom <{}>", b.as_ref())
+            LispValue::Atom(b) => write!(f, "Atom <{}>", b.as_ref().borrow())
         }
 
     }

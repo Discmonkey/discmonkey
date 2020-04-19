@@ -121,9 +121,9 @@ impl Tokenizer {
                 v.push_back(Token::new(m.as_str().to_string(),
                                   TokenType::SpecialTwo));
 
-            } else if let Some(m) = cap.name("comment") {
-                v.push_back(Token::new(m.as_str().to_string(),
-                                  TokenType::Comment));
+            } else if let Some(_m) = cap.name("comment") {
+                // comment!
+//                println!("{}", m.as_str());
             }
         }
 
