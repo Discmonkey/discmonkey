@@ -4,9 +4,28 @@ use crate::types::unit::Unit;
 use crate::reader::tokenizer::TokenType;
 use crate::types::env::Scope;
 
+#[macro_export]
+macro_rules! arg_return {
+    ($fname:ident, $numargs:expr, $list:expr) => {
+        if $list.len() != $numargs + 1 {
+            return LispValue::Error(stringify!($fname, " takes ", $numargs, " args").to_string());
+        }
+    }
+}
 
 
 pub fn eval_ast(root: &LispValue, mut env: &mut Scope) -> LispValue {
+
+    // handle macro expansion
+    if let LispValue::List(list) = root {
+        if let Some(first_token) = list.first_token() {
+            if let Some(LispValue::Macro(l)) = env.get(first_token.get_text()) {
+                let evaluated_macro = l(list, env);
+                return eval_ast(&evaluated_macro, env)
+            }
+        }
+    }
+
     match root {
         LispValue::List(list) => eval_list(&list, &mut env),
         LispValue::Unit(atom) => eval_symbol(&atom, env),
@@ -14,7 +33,7 @@ pub fn eval_ast(root: &LispValue, mut env: &mut Scope) -> LispValue {
     }
 }
 
-pub fn eval_list(list: &List, env: &mut Scope) -> LispValue {
+pub fn eval_list(mut list: &List, env: &mut Scope) -> LispValue {
 
     if list.len() == 0 {
         return LispValue::Nil

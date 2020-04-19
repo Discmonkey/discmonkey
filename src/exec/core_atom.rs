@@ -4,15 +4,9 @@ use crate::types::ast::LispValue;
 use crate::exec::eval::eval_ast;
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::arg_return;
 
 
-macro_rules! arg_return {
-    ($fname:ident, $numargs:expr, $list:expr) => {
-        if $list.len() != $numargs + 1 {
-            return LispValue::Error(stringify!($fname, " takes ", $numargs, " args").to_string());
-        }
-    }
-}
 pub fn apply_atom(list: &List, env: &mut Scope) -> LispValue {
     arg_return!(apply_atom, 1, list);
 

@@ -3,12 +3,13 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use crate::exec::core_atom::{apply_atom, apply_deref, apply_is_atom, apply_reset, apply_swap};
+use crate::exec::core_list::{apply_concat, apply_cons};
 use crate::exec::core_recursive::{apply_do, apply_let, apply_if, create_func, apply_def};
 use crate::exec::core_comparison::{apply_equals, apply_greater_than, apply_greater_than_equals,
                                    apply_less_than, apply_less_than_equals};
 
 use crate::exec::core_file::{apply_slurp};
-use crate::exec::core_meta::{apply_quote};
+use crate::exec::core_meta::{apply_quote, apply_macro};
 use crate::exec::math::{add, sub, mul, div};
 use crate::exec::core_utils::{apply_list, apply_eval, apply_str, apply_read_string, apply_prn};
 
@@ -88,6 +89,10 @@ impl Scope {
         insert!(map, "swap!", apply_swap);
 
         insert!(map, "quote", apply_quote);
+        insert!(map, "cons", apply_cons);
+        insert!(map, "concat", apply_concat);
+
+        insert!(map, "macro!", apply_macro);
 
         let env = Rc::new(RefCell::new(Env {
             data: map,
@@ -118,7 +123,7 @@ impl Scope {
         // one of many places were as_ref is used --
         // this *tricks* the Rc to correctly delegate the borrow_mut method call to the underlying refcell
         // otherwise everything is a mess.
-        self.current.as_ref().borrow_mut().insert(key, entry );
+        self.current.as_ref().borrow_mut().insert(key, entry);
     }
 
     pub fn find(&self, key: &String) -> Option<Rc<RefCell<Env>>> {

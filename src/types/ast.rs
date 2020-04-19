@@ -21,7 +21,8 @@ pub enum LispValue {
     String(String),
     // we need interior mutability here since we can potentially "swap" and "mutate" the contents of an atom
     // they are inspired by the clojure atoms.
-    Atom(Rc<RefCell<LispValue>>)
+    Atom(Rc<RefCell<LispValue>>),
+    Macro(Lambda)
 }
 
 pub type AST = LispValue;
@@ -39,7 +40,8 @@ impl Display for LispValue {
             LispValue::String(s) => write!(f, "{}", s),
             LispValue::List(l) => write!(f, "{}", l),
             LispValue::Unit(a) => write!(f, "{}", a),
-            LispValue::Atom(b) => write!(f, "Atom <{}>", b.as_ref().borrow())
+            LispValue::Atom(b) => write!(f, "Atom <{}>", b.as_ref().borrow()),
+            LispValue::Macro(_l) => write!(f, "#<macro>")
         }
 
     }
